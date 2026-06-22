@@ -1,0 +1,27 @@
+{
+  "name": "neuromancer-mcp",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Publish yourself as a remote MCP server — a company's agent connects with one command to learn about you and reach out.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/local.ts",
+    "build": "tsc",
+    "start": "node dist/local.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "express": "^5.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
