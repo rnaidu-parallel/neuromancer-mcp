@@ -12,7 +12,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { profile } from "./profile.js";
-import { fitForRole } from "./fit.js";
 import { notifyOwner } from "./notify.js";
 
 /** The whole profile as one markdown document — backs the profile://me resource. */
@@ -179,66 +178,39 @@ export function createServer(): McpServer {
     },
   );
 
-  // ── Read tool: the fit assessment. NO LLM here (design choice c) — we return ─
-  // ranked, keyword-matched evidence and let the CALLING agent's model synthesize.
+  // ── Read tool: assemble context for a fit assessment, then let the CALLING ──
+  // agent's LLM do the reasoning. We deliberately do NO matching here — keyword
+  // matching is brittle and misses semantic fits ("orchestration" vs "agent
+  // pipelines"). The tool hands over the full background + the JD + an instruction
+  // to judge honestly, and gets out of the way. The frontier model that called us
+  // does the semantic match, ranking, and gap-finding far better than code could.
   server.registerTool(
     "fit_for_role",
     {
       title: "Fit for a role",
       description:
-        "Given a job description, returns the most relevant experience, projects, and " +
-        "skills, plus prominent JD terms not evidenced here. This is keyword-matched " +
-        "evidence, not a verdict — reason about the fit yourself from it.",
+        "Given a job description, returns the candidate's full background framed " +
+        "against that role for YOU to assess. One call gives you everything needed " +
+        "to judge fit honestly — strengths and genuine gaps.",
       inputSchema: {
         job_description: z
           .string()
+          .min(1)
           .describe("The full job description, or a summary of the role's requirements."),
       },
     },
     async ({ job_description }) => {
-      const r = fitForRole(job_description);
-      const lines: string[] = [
-        "Fit evidence (keyword-matched — synthesize the verdict yourself):",
+      const text = [
+        "Assess this candidate against the role below. Give an honest verdict —",
+        "real strengths AND genuine gaps. Reason over the full background; don't flatter.",
         "",
-      ];
-
-      if (r.matchedSkills.length) {
-        lines.push(`Matched skills: ${r.matchedSkills.join(", ")}`, "");
-      }
-      if (r.relevantExperience.length) {
-        lines.push("Relevant experience:");
-        for (const e of r.relevantExperience) {
-          lines.push(
-            `- ${e.role} (${e.area}): ${e.summary} [matched: ${e.matched.join(", ")}]`,
-          );
-        }
-        lines.push("");
-      }
-      if (r.relevantProjects.length) {
-        lines.push("Relevant projects:");
-        for (const p of r.relevantProjects) {
-          lines.push(
-            `- ${p.name}${p.url ? ` (${p.url})` : ""}: ${p.oneLiner} [matched: ${p.matched.join(", ")}]`,
-          );
-        }
-        lines.push("");
-      }
-      if (
-        !r.matchedSkills.length &&
-        !r.relevantExperience.length &&
-        !r.relevantProjects.length
-      ) {
-        lines.push(
-          "No direct keyword overlap. Try about_me / get_experience for the general picture.",
-          "",
-        );
-      }
-      if (r.notEvidenced.length) {
-        lines.push(
-          `Prominent JD terms not evidenced here (keyword-based, may be phrased differently): ${r.notEvidenced.join(", ")}`,
-        );
-      }
-      return { content: [{ type: "text", text: lines.join("\n").trim() }] };
+        "── ROLE ──",
+        job_description,
+        "",
+        "── CANDIDATE (full background) ──",
+        renderProfileMarkdown(),
+      ].join("\n");
+      return { content: [{ type: "text", text }] };
     },
   );
 

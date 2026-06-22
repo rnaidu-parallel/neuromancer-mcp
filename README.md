@@ -26,7 +26,7 @@ for our role, get in touch."*
 | `about_me` | — | Short bio + key links. The "who is this?" entry point. |
 | `get_experience` | `area?` | Work experience, optionally filtered to one area. |
 | `list_projects` | `tag?` | Shipped, open-source work with links. Proof, not claims. |
-| `fit_for_role` | `job_description` | Ranked experience/projects/skills matched to a JD + honest gap terms. No LLM — the calling agent synthesizes. |
+| `fit_for_role` | `job_description` | Returns the full background framed against the JD for the calling agent to assess. No server-side matching — the agent's own LLM does the semantic judgment. |
 | `availability` | — | What the owner is open to; lets an agent self-qualify. |
 | `contact_me` | `from`, `message`, `context?` | Notifies the owner (email) that someone wants to connect. Inbound-only. |
 
