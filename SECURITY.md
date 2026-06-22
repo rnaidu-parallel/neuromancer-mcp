@@ -41,7 +41,7 @@ primary thing to defend.
 
 | # | Risk | Severity | Notes |
 | --- | --- | --- | --- |
-| 1 | **No effective rate limit in production.** The Express dev server has an in-process limiter, but on serverless each instance is separate, so it does not bound a determined caller. `contact_me` could be scripted to flood the owner's inbox or burn the Resend quota. | **High** | The main gap. See hardening #1. |
+| 1 | **Rate limiting.** Addressed: the serverless route now runs a per-IP Upstash limiter (60/min general, 5/hour for `contact_me`). It is a no-op until `UPSTASH_REDIS_REST_*` are set, so it must be activated by connecting Upstash (Vercel Marketplace, free) and redeploying. The Express dev server keeps its in-process limiter. | Medium until activated | Activate Upstash to close it; the Resend account cap is the backstop against IP rotation. |
 | 2 | **Browser amplification.** Because the endpoint is public and unauthenticated, a malicious web page could use visitors' browsers to call `contact_me`, spreading the source IPs. | Medium | Mitigated by edge rate limiting (#1). |
 | 3 | **Unauthenticated by design.** Anyone can call any tool. Acceptable for a public profile, but it is the reason #1 matters. | Medium (accepted) | Add a lightweight token only if abuse appears. |
 | 4 | **Prompt injection via `job_description`.** `fit_for_role` echoes the caller's JD into its result. | Low | The JD and the agent reading the result belong to the *same* caller, so it is self-inflicted; statelessness means no cross-user vector. Treat `contact_me` message content as untrusted text: do not auto-execute it or render it as HTML downstream. |
@@ -50,16 +50,15 @@ primary thing to defend.
 
 ## Recommended hardening, in priority order
 
-1. **Add a Vercel Firewall rate-limit rule on `/api/mcp`** (for example, N requests per minute per
-   IP). Zero code, configured in the Vercel dashboard. This is the single highest-value control
-   and directly addresses risks #1 and #2. Vercel's built-in DDoS protection sits in front of it.
-2. **Back `contact_me` with a shared-store limiter** (Upstash Redis or Vercel KV) keyed by IP,
-   plus a per-day global email cap, if you want application-level enforcement on top of the edge
-   rule.
-3. **Cap and monitor Resend usage.** Set a sending limit/alert on the Resend account so abuse has
-   a hard ceiling and you find out quickly.
-4. **Keep dependencies current.** Enable Dependabot; re-run `npm audit` on updates.
-5. **If spam appears,** add a honeypot field or a minimal proof-of-work / token gate to
+1. **Activate the Upstash limiter (implemented).** Connect Upstash Redis to the project via the
+   Vercel Marketplace (free tier). It sets `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+   automatically; redeploy and the per-IP limits in `src/ratelimit.ts` turn on. Optionally add a
+   Vercel Firewall rule on top for edge-level blocking.
+2. **Cap and monitor Resend usage.** Set a sending limit/alert on the Resend account so abuse has
+   a hard ceiling (this is the backstop against IP rotation, which per-IP limits can't stop) and
+   you find out quickly.
+3. **Keep dependencies current.** Enable Dependabot; re-run `npm audit` on updates.
+4. **If spam appears,** add a honeypot field or a minimal proof-of-work / token gate to
    `contact_me` before considering full auth.
 
 ## Reporting

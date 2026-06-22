@@ -33,6 +33,8 @@ so a first deploy works even before you add keys.
 | `RESEND_API_KEY` | for real email | A Resend API key from **your own** Resend account. |
 | `CONTACT_TO_EMAIL` | for real email | The inbox where contact notifications should land. |
 | `CONTACT_FROM_EMAIL` | optional | A verified sender on that Resend account. Defaults to Resend's test sender, which only delivers to your own account email. |
+| `UPSTASH_REDIS_REST_URL` | for rate limiting | Set automatically when you connect Upstash via the Vercel Marketplace. |
+| `UPSTASH_REDIS_REST_TOKEN` | for rate limiting | Set automatically with the URL above. |
 
 Add them either way:
 
@@ -91,9 +93,10 @@ claude mcp add --transport http rahul https://mcp.neuromancer.in/api/mcp
 
 ## Notes
 
-- **Rate limiting:** the local Express server has an in-process limiter, but that is useless on
-  serverless (each instance is separate). For production, rate limit at the edge with
-  **Vercel Firewall** (or Vercel's built-in DDoS protection). The real abuse surface is
-  `contact_me`; its inputs are length-capped in code, and Resend has its own sending limits.
+- **Rate limiting:** the serverless route runs a per-IP Upstash limiter (`src/ratelimit.ts`:
+  60/min general, 5/hour for `contact_me`). It is a **no-op until activated** — connect Upstash
+  Redis via the Vercel Marketplace (free tier), which sets `UPSTASH_REDIS_REST_URL` /
+  `UPSTASH_REDIS_REST_TOKEN`, then redeploy. Set a sending cap on the Resend account too, as the
+  backstop against IP rotation. (The local Express server keeps its own in-process limiter.)
 - **Local dev is unchanged:** `npm run dev` still serves `http://localhost:3000/mcp` via Express.
   `api/mcp.ts` is only used on Vercel.
