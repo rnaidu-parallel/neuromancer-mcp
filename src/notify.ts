@@ -29,7 +29,11 @@ export async function notifyOwner(p: ContactPayload): Promise<NotifyResult> {
   const from =
     process.env.CONTACT_FROM_EMAIL ?? "neuromancer-mcp <onboarding@resend.dev>";
 
-  const subject = `MCP contact from ${p.from}`;
+  // Defense in depth: collapse newlines in the value that goes into the subject
+  // line. We send via Resend's JSON API (not raw SMTP), so header injection isn't
+  // possible regardless, but a clean single-line subject is correct anyway.
+  const oneLine = (s: string) => s.replace(/[\r\n]+/g, " ").trim();
+  const subject = `MCP contact from ${oneLine(p.from).slice(0, 120)}`;
   const body = [
     "Someone reached out through your MCP server.",
     "",
