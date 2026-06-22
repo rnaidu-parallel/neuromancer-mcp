@@ -21,7 +21,10 @@ function renderProfileMarkdown(): string {
   for (const [k, v] of Object.entries(p.links)) lines.push(`- ${k}: ${v}`);
   lines.push(`- résumé: ${p.resumeUrl}`, "", "## Experience");
   for (const e of p.experience) {
-    lines.push(`### ${e.role} (${e.area})`, e.summary);
+    lines.push(
+      `### ${e.role} — ${e.company} (${e.dates}${e.location ? `, ${e.location}` : ""})`,
+      e.summary,
+    );
     for (const h of e.highlights) lines.push(`- ${h}`);
     lines.push("");
   }
@@ -29,8 +32,16 @@ function renderProfileMarkdown(): string {
   for (const pr of p.projects) {
     lines.push(`- **${pr.name}**${pr.url ? ` (${pr.url})` : ""} — ${pr.oneLiner}`);
   }
-  lines.push("", "## Skills", p.skills.join(", "), "", "## Availability", p.availability.summary);
+  lines.push("", "## Skills");
+  for (const g of p.skills) lines.push(`- ${g.label}: ${g.items.join(", ")}`);
+  lines.push("", "## Education");
+  for (const ed of p.education) lines.push(`- ${ed.degree}, ${ed.school} (${ed.dates})`);
+  lines.push("", "## Achievements");
+  for (const a of p.achievements) lines.push(`- ${a}`);
   lines.push(
+    "",
+    "## Availability",
+    p.availability.summary,
     `- Looking for: ${p.availability.lookingFor.join("; ")}`,
     `- Work mode: ${p.availability.workMode}`,
     `- Timing: ${p.availability.timing}`,
@@ -70,6 +81,10 @@ export function createServer(): McpServer {
             "",
             profile.bio,
             "",
+            `Education: ${profile.education
+              .map((e) => `${e.degree}, ${e.school}`)
+              .join("; ")}`,
+            "",
             "Links:",
             ...Object.entries(profile.links).map(([k, v]) => `- ${k}: ${v}`),
             `- résumé: ${profile.resumeUrl}`,
@@ -95,27 +110,22 @@ export function createServer(): McpServer {
           .string()
           .optional()
           .describe(
-            "Filter to one area tag, e.g. 'agents' or 'infra'. Omit for all.",
+            "Filter to one tag, e.g. 'agents', 'data', or 'health'. Omit for all.",
           ),
       },
     },
     async ({ area }) => {
       const items = area
-        ? profile.experience.filter(
-            (e) => e.area.toLowerCase() === area.toLowerCase(),
+        ? profile.experience.filter((e) =>
+            e.tags.some((t) => t.toLowerCase() === area.toLowerCase()),
           )
         : profile.experience;
 
       if (items.length === 0) {
+        const tags = [...new Set(profile.experience.flatMap((e) => e.tags))].join(", ");
         return {
           content: [
-            {
-              type: "text",
-              text:
-                `No experience tagged "${area}". Known areas: ` +
-                profile.experience.map((e) => e.area).join(", ") +
-                ".",
-            },
+            { type: "text", text: `No experience tagged "${area}". Known tags: ${tags}.` },
           ],
         };
       }
@@ -123,7 +133,7 @@ export function createServer(): McpServer {
       const text = items
         .map((e) =>
           [
-            `${e.role} (${e.area})`,
+            `${e.role} — ${e.company} (${e.dates}${e.location ? `, ${e.location}` : ""})`,
             e.summary,
             ...e.highlights.map((h) => `  • ${h}`),
           ].join("\n"),
