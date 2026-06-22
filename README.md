@@ -8,7 +8,7 @@ stack of résumés. This flips the direction. You publish *yourself* as a remote
 company's agent connects with one command to learn about you and, if there's a fit, reach out.
 
 ```bash
-claude mcp add --transport http you https://mcp.example.com/mcp
+claude mcp add --transport http you https://mcp.example.com/api/mcp
 ```
 
 Then, inside their agent:
@@ -48,7 +48,7 @@ Any MCP client works (Claude Code, Claude Desktop, Cursor, Windsurf, or your own
 Claude Code:
 
 ```bash
-claude mcp add --transport http <name> https://<host>/mcp
+claude mcp add --transport http <name> https://<host>/api/mcp
 # talk to your agent, then remove it with:
 claude mcp remove <name>
 ```
@@ -58,8 +58,10 @@ at the same URL:
 
 ```bash
 npx @modelcontextprotocol/inspector
-# Transport: Streamable HTTP, URL: https://<host>/mcp
+# Transport: Streamable HTTP, URL: https://<host>/api/mcp
 ```
+
+(Running locally, the endpoint is `http://localhost:3000/mcp` via the Express dev server.)
 
 ## Make it your own (the template)
 
@@ -116,6 +118,13 @@ logs the message instead of sending it, so the project works the moment you clon
   handler runs, and a small per-IP rate limit guards the endpoint.
 - **Your inbox is not in the code.** Outreach is delivered via `CONTACT_TO_EMAIL` from the
   environment, so a public repo never exposes a scrapable address.
+
+## Deploy
+
+Production runs on Vercel as a serverless function (`api/mcp.ts`), while local dev uses the
+Express server. Both register the same tools via `src/capabilities.ts`. See [DEPLOY.md](DEPLOY.md)
+for the full walkthrough: import, environment variables, custom domain, and turning off
+Deployment Protection.
 
 ## License
 
