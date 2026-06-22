@@ -24,8 +24,11 @@ let initialized = false;
 function init(): void {
   if (initialized) return;
   initialized = true;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel's Upstash/KV integration injects KV_REST_API_*; the native Upstash
+  // integration uses UPSTASH_REDIS_REST_*. Accept either so it works wherever it's
+  // connected.
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return; // not configured -> no-op
   const redis = new Redis({ url, token });
   general = new Ratelimit({
