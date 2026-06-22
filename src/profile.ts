@@ -18,6 +18,23 @@ export interface Project {
   name: string;
   url?: string;
   oneLiner: string;
+  /** Lowercase tags for filtering and fit-matching, e.g. "agents", "infra". */
+  tags: string[];
+}
+
+export interface Availability {
+  /** Whether you're open to conversations at all. */
+  open: boolean;
+  /** One line an agent can quote about your status. */
+  summary: string;
+  /** Role types you'd consider. */
+  lookingFor: string[];
+  /** Remote / hybrid / location constraints. */
+  workMode: string;
+  /** Rough timing, e.g. "open to the right conversation; not in a rush". */
+  timing: string;
+  /** What you do NOT want — lets an agent self-qualify out before pinging. */
+  notLookingFor: string[];
 }
 
 export interface Profile {
@@ -28,8 +45,13 @@ export interface Profile {
   links: Record<string, string>;
   experience: Experience[];
   projects: Project[];
+  /** Flat list of technologies/domains; used by fit_for_role matching. */
+  skills: string[];
+  availability: Availability;
   /** Public résumé URL the agent can hand back. */
   resumeUrl: string;
+  /** Public booking link returned by contact_me (Google Calendar appt schedule / Cal.com). */
+  schedulingUrl: string;
 }
 
 // TODO(rahul): expand with your real, public-safe details before deploying.
@@ -75,13 +97,43 @@ export const profile: Profile = {
       url: "https://github.com/rnaidu-parallel/agent-coercion-layer",
       oneLiner:
         "Keep tool-calls working when you swap the model underneath an agent.",
+      tags: ["agents", "tool-calling", "reliability", "evals"],
     },
     {
       name: "prompt-cache-economics",
       url: "https://github.com/rnaidu-parallel/prompt-cache-economics",
       oneLiner:
         "A timestamp in your prompt prefix is a 0% cache hit — and it costs you.",
+      tags: ["infra", "caching", "cost", "evals"],
     },
   ],
+  // TODO(rahul): keep this list to things you can speak to in depth.
+  skills: [
+    "TypeScript",
+    "Python",
+    "LLM agent systems",
+    "tool-calling",
+    "structured output",
+    "prompt caching",
+    "MCP",
+    "RAG",
+    "vLLM",
+    "local inference",
+    "evals",
+  ],
+  // TODO(rahul): make this honest and current before deploying.
+  availability: {
+    open: true,
+    summary:
+      "Open to conversations about senior AI / agent-systems and LLM-infrastructure roles.",
+    lookingFor: [
+      "agent systems / applied LLM engineering",
+      "LLM serving & inference infrastructure",
+    ],
+    workMode: "Remote-friendly",
+    timing: "Open to the right conversation; not in a rush.",
+    notLookingFor: ["pure front-end roles", "non-technical / PM-only roles"],
+  },
   resumeUrl: "https://blog.neuromancer.in", // TODO(rahul): point to a real résumé PDF
+  schedulingUrl: "", // TODO(rahul): paste a public booking link, or leave "" to omit it
 };

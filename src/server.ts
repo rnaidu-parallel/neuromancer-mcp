@@ -12,6 +12,32 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { profile } from "./profile.js";
+import { fitForRole } from "./fit.js";
+
+/** The whole profile as one markdown document — backs the profile://me resource. */
+function renderProfileMarkdown(): string {
+  const p = profile;
+  const lines: string[] = [`# ${p.name}`, "", `*${p.headline}*`, "", p.bio, "", "## Links"];
+  for (const [k, v] of Object.entries(p.links)) lines.push(`- ${k}: ${v}`);
+  lines.push(`- résumé: ${p.resumeUrl}`, "", "## Experience");
+  for (const e of p.experience) {
+    lines.push(`### ${e.role} (${e.area})`, e.summary);
+    for (const h of e.highlights) lines.push(`- ${h}`);
+    lines.push("");
+  }
+  lines.push("## Projects");
+  for (const pr of p.projects) {
+    lines.push(`- **${pr.name}**${pr.url ? ` (${pr.url})` : ""} — ${pr.oneLiner}`);
+  }
+  lines.push("", "## Skills", p.skills.join(", "), "", "## Availability", p.availability.summary);
+  lines.push(
+    `- Looking for: ${p.availability.lookingFor.join("; ")}`,
+    `- Work mode: ${p.availability.workMode}`,
+    `- Timing: ${p.availability.timing}`,
+    `- Not looking for: ${p.availability.notLookingFor.join("; ")}`,
+  );
+  return lines.join("\n");
+}
 
 export function createServer(): McpServer {
   const server = new McpServer(
@@ -46,6 +72,7 @@ export function createServer(): McpServer {
             "",
             "Links:",
             ...Object.entries(profile.links).map(([k, v]) => `- ${k}: ${v}`),
+            `- résumé: ${profile.resumeUrl}`,
           ].join("\n"),
         },
       ],
@@ -105,6 +132,156 @@ export function createServer(): McpServer {
 
       return { content: [{ type: "text", text }] };
     },
+  );
+
+  // ── Read tool: shipped, open-source work. "What has this person built?" ─────
+  server.registerTool(
+    "list_projects",
+    {
+      title: "List projects",
+      description:
+        "Lists shipped, open-source projects with links, optionally filtered by tag. " +
+        "Use this for 'what has this person built?' — it's proof, not claims.",
+      inputSchema: {
+        tag: z
+          .string()
+          .optional()
+          .describe("Filter to one tag, e.g. 'agents' or 'infra'. Omit for all."),
+      },
+    },
+    async ({ tag }) => {
+      const items = tag
+        ? profile.projects.filter((p) =>
+            p.tags.some((t) => t.toLowerCase() === tag.toLowerCase()),
+          )
+        : profile.projects;
+
+      if (items.length === 0) {
+        const tags = [...new Set(profile.projects.flatMap((p) => p.tags))].join(", ");
+        return {
+          content: [
+            { type: "text", text: `No projects tagged "${tag}". Known tags: ${tags}.` },
+          ],
+        };
+      }
+
+      const text = items
+        .map((p) =>
+          [
+            `${p.name}${p.url ? ` — ${p.url}` : ""}`,
+            `  ${p.oneLiner}`,
+            `  tags: ${p.tags.join(", ")}`,
+          ].join("\n"),
+        )
+        .join("\n\n");
+      return { content: [{ type: "text", text }] };
+    },
+  );
+
+  // ── Read tool: the fit assessment. NO LLM here (design choice c) — we return ─
+  // ranked, keyword-matched evidence and let the CALLING agent's model synthesize.
+  server.registerTool(
+    "fit_for_role",
+    {
+      title: "Fit for a role",
+      description:
+        "Given a job description, returns the most relevant experience, projects, and " +
+        "skills, plus prominent JD terms not evidenced here. This is keyword-matched " +
+        "evidence, not a verdict — reason about the fit yourself from it.",
+      inputSchema: {
+        job_description: z
+          .string()
+          .describe("The full job description, or a summary of the role's requirements."),
+      },
+    },
+    async ({ job_description }) => {
+      const r = fitForRole(job_description);
+      const lines: string[] = [
+        "Fit evidence (keyword-matched — synthesize the verdict yourself):",
+        "",
+      ];
+
+      if (r.matchedSkills.length) {
+        lines.push(`Matched skills: ${r.matchedSkills.join(", ")}`, "");
+      }
+      if (r.relevantExperience.length) {
+        lines.push("Relevant experience:");
+        for (const e of r.relevantExperience) {
+          lines.push(
+            `- ${e.role} (${e.area}): ${e.summary} [matched: ${e.matched.join(", ")}]`,
+          );
+        }
+        lines.push("");
+      }
+      if (r.relevantProjects.length) {
+        lines.push("Relevant projects:");
+        for (const p of r.relevantProjects) {
+          lines.push(
+            `- ${p.name}${p.url ? ` (${p.url})` : ""}: ${p.oneLiner} [matched: ${p.matched.join(", ")}]`,
+          );
+        }
+        lines.push("");
+      }
+      if (
+        !r.matchedSkills.length &&
+        !r.relevantExperience.length &&
+        !r.relevantProjects.length
+      ) {
+        lines.push(
+          "No direct keyword overlap. Try about_me / get_experience for the general picture.",
+          "",
+        );
+      }
+      if (r.notEvidenced.length) {
+        lines.push(
+          `Prominent JD terms not evidenced here (keyword-based, may be phrased differently): ${r.notEvidenced.join(", ")}`,
+        );
+      }
+      return { content: [{ type: "text", text: lines.join("\n").trim() }] };
+    },
+  );
+
+  // ── Read tool: lets the agent self-qualify before reaching out. ─────────────
+  server.registerTool(
+    "availability",
+    {
+      title: "Availability",
+      description:
+        "What this person is open to: role types, work mode, timing, and what they are " +
+        "NOT looking for. Check this to self-qualify before reaching out via contact_me.",
+    },
+    async () => {
+      const a = profile.availability;
+      const text = [
+        a.open ? "Open to conversations." : "Not actively looking right now.",
+        a.summary,
+        "",
+        `Looking for: ${a.lookingFor.join("; ")}`,
+        `Work mode: ${a.workMode}`,
+        `Timing: ${a.timing}`,
+        `Not looking for: ${a.notLookingFor.join("; ")}`,
+      ].join("\n");
+      return { content: [{ type: "text", text }] };
+    },
+  );
+
+  // ── Resource: the whole profile as one document. App/client-controlled (the ─
+  // client decides to read it), in contrast to the model-driven tools above.
+  server.registerResource(
+    "profile",
+    "profile://me",
+    {
+      title: "Full profile",
+      description:
+        "The complete profile (bio, experience, projects, skills, availability) as one " +
+        "markdown document — for clients that prefer to ground on a resource.",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({
+      contents: [
+        { uri: uri.href, mimeType: "text/markdown", text: renderProfileMarkdown() },
+      ],
+    }),
   );
 
   return server;
