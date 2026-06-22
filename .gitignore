@@ -1,8 +1,20 @@
+# dependencies
 node_modules/
+
+# build output
 dist/
+*.tsbuildinfo
+
+# env / secrets (keep the example)
 .env
 .env.*
 !.env.example
-.DS_Store
-*.log
+
+# deploy
 .vercel/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
