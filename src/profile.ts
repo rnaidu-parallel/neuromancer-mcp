@@ -212,20 +212,19 @@ export const profile: Profile = {
     "JEE Main 2017: AIR 3,289 (top 0.27% of 1.2M candidates); JEE Advanced 2017: AIR 4,473; CAT 2021: 99.19 percentile.",
     "Bronze Medal, BitGrit Data Science Contest, Inter-IIT Tech Meet, IIT Roorkee 2019.",
   ],
-  // TODO(rahul): confirm this reflects your current stance before deploying.
   availability: {
     open: true,
     summary:
-      "Open to senior / founding engineering roles in agentic AI and LLM systems.",
+      "Actively looking for new roles in agentic AI and LLM systems.",
     lookingFor: [
       "agentic AI & applied LLM engineering",
       "LLM serving / inference infrastructure",
       "founding / early-stage engineering",
     ],
     workMode: "Remote-friendly (based in India)",
-    timing: "Open to the right conversation.",
+    timing: "Actively interviewing and available to talk now.",
     notLookingFor: ["pure front-end roles", "non-technical / PM-only roles"],
   },
-  resumeUrl: "https://blog.neuromancer.in", // TODO(rahul): point to a hosted résumé PDF
-  schedulingUrl: "", // TODO(rahul): paste a public booking link, or leave "" to omit it
+  resumeUrl: "https://blog.neuromancer.in/resume.pdf",
+  schedulingUrl: "https://calendar.app.google/6ukMiHNSgbPLC5YA7",
 };
