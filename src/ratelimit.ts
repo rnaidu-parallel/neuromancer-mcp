@@ -15,7 +15,7 @@
  * The ultimate backstop against IP rotation is the Resend account's own sending cap.
  */
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { getRedis } from "./redis.js";
 
 let general: Ratelimit | null = null;
 let contact: Ratelimit | null = null;
@@ -24,13 +24,8 @@ let initialized = false;
 function init(): void {
   if (initialized) return;
   initialized = true;
-  // Vercel's Upstash/KV integration injects KV_REST_API_*; the native Upstash
-  // integration uses UPSTASH_REDIS_REST_*. Accept either so it works wherever it's
-  // connected.
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return; // not configured -> no-op
-  const redis = new Redis({ url, token });
+  const redis = getRedis();
+  if (!redis) return; // not configured -> no-op
   general = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(60, "1 m"),

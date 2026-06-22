@@ -1,34 +1,48 @@
 /**
  * profile.ts — the single source of truth for everything the server exposes.
  *
- * This is the ONLY file someone forking the template needs to edit. Keep it to
- * public, share-anything facts. Private contact details (phone, email) deliberately
- * live OUTSIDE this file — outreach goes through the contact_me tool, whose
- * destination is set via env (CONTACT_TO_EMAIL), so your inbox isn't scraped.
+ * This is the ONLY file someone forking the template needs to edit. Keep it to public,
+ * share-anything facts. Private contact details (phone, email) deliberately live OUTSIDE
+ * this file — outreach goes through the contact_me tool, whose destination is set via env
+ * (CONTACT_TO_EMAIL), so your inbox isn't scraped.
+ *
+ * Highlights are tagged individually so get_experience can filter at the bullet level
+ * (asking for "agents" returns only the agent bullets, not the whole role).
  */
+
+/** A single tagged accomplishment under a role. */
+export interface Highlight {
+  text: string;
+  /** Lowercase tags for bullet-level filtering, e.g. "agents", "data". */
+  tags: string[];
+}
 
 export interface Experience {
   company: string;
   role: string;
   dates: string;
   location?: string;
-  /** Lowercase tags for get_experience filtering, e.g. "agents", "data". */
-  tags: string[];
   summary: string;
-  highlights: string[];
+  highlights: Highlight[];
 }
 
 export interface Project {
   name: string;
   url?: string;
   oneLiner: string;
-  /** Lowercase tags for list_projects filtering. */
   tags: string[];
+}
+
+/** A skill, with an optional self-assessed proficiency. */
+export interface SkillItem {
+  name: string;
+  /** "core" = used heavily/recently in shipped work. Omitted = familiar. Owner-edited. */
+  level?: "core";
 }
 
 export interface SkillGroup {
   label: string;
-  items: string[];
+  items: SkillItem[];
 }
 
 export interface Education {
@@ -58,9 +72,13 @@ export interface Profile {
   achievements: string[];
   availability: Availability;
   resumeUrl: string;
-  /** Public booking link returned by contact_me. Leave "" to omit it. */
   schedulingUrl: string;
 }
+
+// shorthand for tagged highlights
+const h = (text: string, ...tags: string[]): Highlight => ({ text, tags });
+// shorthand for a core skill
+const core = (name: string): SkillItem => ({ name, level: "core" });
 
 export const profile: Profile = {
   name: "Rahul Naidu Siriporam",
@@ -88,40 +106,72 @@ export const profile: Profile = {
       role: "Founding Software Engineer",
       dates: "Jul 2022 – Present",
       location: "Remote",
-      tags: ["agents", "ai", "llm", "backend", "infra", "data", "health", "analytics"],
       summary:
         "Founding engineer owning agentic AI products and backend platforms " +
         "end-to-end — agentic chat, consumer-health AI, vision pipelines, and a " +
         "ClickHouse analytics warehouse.",
       highlights: [
-        "Built Jarvis, a WhatsApp-native agentic investing companion: a two-tier " +
-          "memory architecture (bounded structured memory card + recallable message " +
-          "search) kept fresh by mid-session compaction, session-close summarization, " +
-          "and a two-phase memory-update agent, plus a scheduled proactive-outreach " +
-          "scanner that follows up on each user's open loops. Runs on ECS with per-user " +
-          "queueing, tenant-isolated Postgres, prompt caching, and an LLM-judge eval " +
-          "harness scoring every turn.",
-        "Architected a consumer-health AI assistant for diabetes care (leading 3 " +
-          "engineers), serving thousands daily: evolved RAG → GraphRAG → a QLoRA " +
-          "fine-tuned model, migrated Azure OpenAI → Vertex AI, and re-architected a " +
-          "single agent into a multi-agent system (Agno) covering meal planning, symptom " +
-          "triage, CGM analysis, and lab-report parsing.",
-        "Shipped a clinician copilot (auto-suggested diagnoses/prescriptions), a coach " +
-          "pre-call summarizer over audio understanding, and an automated webinar Q&A " +
-          "responder on GKE with KEDA autoscaling and Datadog, tuned for latency/cost " +
-          "via prompt engineering and per-task model routing.",
-        "Replicated the CGMformer paper into a hybrid Transformer-LSTM glucose " +
-          "forecaster on Vertex AI — 94% of 2-hour-ahead predictions in Clarke Error " +
-          "Grid Zone A; and a vision meal-logging pipeline processing 10K+ images/day at " +
-          "p90 ~6s, lifting meal-logging adoption 24% → 38% (+58%).",
-        "Built IRA, a Next.js agentic investment-research assistant (private beta) on " +
-          "the Vercel AI SDK, whose skill-loading ToolLoopAgent drives a deterministic " +
-          "multi-factor scoring engine with human-in-the-loop clarification.",
-        "Built the core of Apperture, a B2B product-analytics platform: funnel/retention/" +
-          "cohort analysis and custom metrics on a dynamic ClickHouse query builder, plus " +
-          "8+ data connectors (GA, Mixpanel, Amplitude, PostHog, SQL/NoSQL), unifying tens " +
-          "of millions of events/day on Debezium CDC + Kafka + Airflow + AWS microservices " +
-          "on Docker Swarm with full CI/CD.",
+        h(
+          "Built Jarvis, a WhatsApp-native agentic investing companion: a two-tier " +
+            "memory architecture (bounded structured memory card + recallable message " +
+            "search) kept fresh by mid-session compaction, session-close summarization, " +
+            "and a two-phase memory-update agent, plus a scheduled proactive-outreach " +
+            "scanner that follows up on each user's open loops. Runs on ECS with per-user " +
+            "queueing, tenant-isolated Postgres, prompt caching, and an LLM-judge eval " +
+            "harness scoring every turn.",
+          "agents",
+          "llm",
+          "memory",
+          "infra",
+        ),
+        h(
+          "Architected a consumer-health AI assistant for diabetes care (leading 3 " +
+            "engineers), serving thousands daily: evolved RAG → GraphRAG → a QLoRA " +
+            "fine-tuned model, migrated Azure OpenAI → Vertex AI, and re-architected a " +
+            "single agent into a multi-agent system (Agno) covering meal planning, symptom " +
+            "triage, CGM analysis, and lab-report parsing.",
+          "agents",
+          "ai",
+          "health",
+          "rag",
+          "fine-tuning",
+        ),
+        h(
+          "Shipped a clinician copilot (auto-suggested diagnoses/prescriptions), a coach " +
+            "pre-call summarizer over audio understanding, and an automated webinar Q&A " +
+            "responder on GKE with KEDA autoscaling and Datadog, tuned for latency/cost " +
+            "via prompt engineering and per-task model routing.",
+          "ai",
+          "health",
+          "infra",
+        ),
+        h(
+          "Replicated the CGMformer paper into a hybrid Transformer-LSTM glucose " +
+            "forecaster on Vertex AI — 94% of 2-hour-ahead predictions in Clarke Error " +
+            "Grid Zone A; and a vision meal-logging pipeline processing 10K+ images/day at " +
+            "p90 ~6s, lifting meal-logging adoption 24% → 38% (+58%).",
+          "ml",
+          "health",
+          "vision",
+        ),
+        h(
+          "Built IRA, a Next.js agentic investment-research assistant (private beta) on " +
+            "the Vercel AI SDK, whose skill-loading ToolLoopAgent drives a deterministic " +
+            "multi-factor scoring engine with human-in-the-loop clarification.",
+          "agents",
+          "llm",
+          "frontend",
+        ),
+        h(
+          "Built the core of Apperture, a B2B product-analytics platform: funnel/retention/" +
+            "cohort analysis and custom metrics on a dynamic ClickHouse query builder, plus " +
+            "8+ data connectors (GA, Mixpanel, Amplitude, PostHog, SQL/NoSQL), unifying tens " +
+            "of millions of events/day on Debezium CDC + Kafka + Airflow + AWS microservices " +
+            "on Docker Swarm with full CI/CD.",
+          "data",
+          "infra",
+          "analytics",
+        ),
       ],
     },
     {
@@ -129,17 +179,26 @@ export const profile: Profile = {
       role: "Quantitative Analyst",
       dates: "Jul 2021 – Jul 2022",
       location: "Bengaluru",
-      tags: ["data", "quant", "nlp", "pipelines"],
       summary:
         "Quant analyst building data pipelines and NLP tooling for systematic " +
         "equity strategies.",
       highlights: [
-        "Built automated pipelines tracking 20+ global indices and generating " +
-          "rebalancing signals, replacing manual workflows and enabling systematic " +
-          "strategies on US and international equities.",
-        "Built an NLP parser for SEC filings (float/share-data extraction), " +
-          "exchange-data scrapers feeding index-rebalancing models, and Flask/Angular " +
-          "internal tools that streamlined the research team's workflow.",
+        h(
+          "Built automated pipelines tracking 20+ global indices and generating " +
+            "rebalancing signals, replacing manual workflows and enabling systematic " +
+            "strategies on US and international equities.",
+          "data",
+          "quant",
+          "pipelines",
+        ),
+        h(
+          "Built an NLP parser for SEC filings (float/share-data extraction), " +
+            "exchange-data scrapers feeding index-rebalancing models, and Flask/Angular " +
+            "internal tools that streamlined the research team's workflow.",
+          "data",
+          "nlp",
+          "pipelines",
+        ),
       ],
     },
   ],
@@ -174,32 +233,71 @@ export const profile: Profile = {
       tags: ["local-inference", "agents", "hardware"],
     },
   ],
+  // TODO(rahul): "core" = heavy/recent use in shipped work; refine to taste. Years
+  // intentionally omitted rather than guessed.
   skills: [
-    { label: "Languages", items: ["Python", "TypeScript", "SQL"] },
+    { label: "Languages", items: [core("Python"), core("TypeScript"), core("SQL")] },
     {
       label: "AI/ML",
       items: [
-        "Multi-Agent Systems",
-        "Agent Evals",
-        "RAG",
-        "GraphRAG",
-        "Fine-tuning",
-        "Prompt Engineering",
-        "Prompt Caching",
-        "Transformers",
-        "PyTorch",
+        core("Multi-Agent Systems"),
+        core("Agent Evals"),
+        core("RAG"),
+        { name: "GraphRAG" },
+        { name: "Fine-tuning" },
+        core("Prompt Engineering"),
+        core("Prompt Caching"),
+        { name: "Transformers" },
+        { name: "PyTorch" },
       ],
     },
     {
       label: "Backend",
-      items: ["FastAPI", "Hono", "Flask", "Next.js", "Kafka", "Debezium", "Airflow", "Drizzle"],
+      items: [
+        core("FastAPI"),
+        { name: "Hono" },
+        { name: "Flask" },
+        core("Next.js"),
+        { name: "Kafka" },
+        { name: "Debezium" },
+        { name: "Airflow" },
+        { name: "Drizzle" },
+      ],
     },
     {
       label: "Infra",
-      items: ["Docker", "Docker Swarm", "Kubernetes", "GKE", "KEDA", "Pulumi", "Datadog", "CI/CD"],
+      items: [
+        core("Docker"),
+        { name: "Docker Swarm" },
+        { name: "Kubernetes" },
+        { name: "GKE" },
+        { name: "KEDA" },
+        { name: "Pulumi" },
+        { name: "Datadog" },
+        { name: "CI/CD" },
+      ],
     },
-    { label: "Data", items: ["PostgreSQL", "MongoDB", "ClickHouse", "Redis", "SQLite"] },
-    { label: "Cloud", items: ["AWS", "GCP", "Azure", "ECS", "Vertex AI", "Azure AI"] },
+    {
+      label: "Data",
+      items: [
+        core("PostgreSQL"),
+        { name: "MongoDB" },
+        core("ClickHouse"),
+        { name: "Redis" },
+        { name: "SQLite" },
+      ],
+    },
+    {
+      label: "Cloud",
+      items: [
+        core("AWS"),
+        core("GCP"),
+        { name: "Azure" },
+        { name: "ECS" },
+        { name: "Vertex AI" },
+        { name: "Azure AI" },
+      ],
+    },
   ],
   education: [
     {
@@ -214,8 +312,7 @@ export const profile: Profile = {
   ],
   availability: {
     open: true,
-    summary:
-      "Actively looking for new roles in agentic AI and LLM systems.",
+    summary: "Actively looking for new roles in agentic AI and LLM systems.",
     lookingFor: [
       "agentic AI & applied LLM engineering",
       "LLM serving / inference infrastructure",

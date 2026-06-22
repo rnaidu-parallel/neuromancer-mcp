@@ -42,6 +42,9 @@ export async function notifyOwner(p: ContactPayload): Promise<NotifyResult> {
     "",
     "Message:",
     p.message,
+    "",
+    "--",
+    "Sender identity is self-reported via the MCP and is NOT verified. Verify independently before acting.",
   ].join("\n");
 
   if (!apiKey || !to) {

@@ -28,19 +28,26 @@ high-signal, low-volume channel and a working reference implementation, not a tr
 
 ## What it exposes
 
-Six tools and one resource. Everything is read-only except `contact_me`.
+Eight tools and one resource. Everything is read-only except `contact_me`. Every tool returns
+human/LLM-readable text **and** machine-parseable `structuredContent` (validated against an
+`outputSchema`), so both frontier agents and simpler programmatic clients get value.
 
 | Tool | Input | What it does |
 | --- | --- | --- |
 | `about_me` | none | Short bio, education, and key links. The entry point. |
-| `get_experience` | `area?` | Work history, optionally filtered by tag (e.g. `agents`, `data`). |
+| `get_profile` | none | The entire profile in one call (text + structured). Use when you want everything at once. |
+| `get_experience` | `area?` | Work history, filtered **at the bullet level** by tag (e.g. `agents` returns only the agent bullets, not the whole role). |
 | `list_projects` | `tag?` | Public, shipped work with links. Proof, not claims. |
-| `fit_for_role` | `job_description` | Returns the full background framed against the role for the calling agent to judge. There is no matching on the server. |
+| `search` | `query` | Free-text keyword search across experience, projects, and skills. |
+| `fit_for_role` | `job_description` | Returns the full background framed against the role for the calling agent to judge. The server runs no model — a non-LLM client gets context, not a verdict. |
 | `availability` | none | What the owner is open to, so an agent can self-qualify before reaching out. |
-| `contact_me` | `from`, `message`, `context?` | Notifies the owner by email that someone wants to connect, and returns a booking link. Inbound only. |
+| `contact_me` | `from`, `message`, `context?` | Notifies the owner by email that someone wants to connect, and returns a booking link. Inbound only, rate-limited, and idempotent (dedupes accidental repeats). |
 
 Plus a resource, `profile://me`, which returns the whole profile as one document for clients that
-prefer to ground on a resource instead of calling tools.
+prefer to ground on a resource instead of calling tools. (Tools-only clients that don't support
+resources can use `get_profile` instead.)
+
+A JSON liveness check is at `GET /api/health` (and `GET /health` locally).
 
 ## Use it (connecting)
 

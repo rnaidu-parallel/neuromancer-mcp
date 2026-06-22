@@ -92,9 +92,12 @@ const methodNotAllowed = (_req: Request, res: Response) =>
 app.get("/mcp", methodNotAllowed);
 app.delete("/mcp", methodNotAllowed);
 
-// A plain health check for humans and uptime monitors (not part of MCP).
+// A plain landing line for humans, and a JSON health check for monitors/agents.
 app.get("/", (_req, res) => {
   res.type("text/plain").send("neuromancer-mcp is up. POST /mcp to talk to it.\n");
+});
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", name: "neuromancer-mcp", version: "0.1.0" });
 });
 
 app.listen(PORT, () => {
