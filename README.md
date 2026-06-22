@@ -25,7 +25,13 @@ for our role, get in touch."*
 | --- | --- | --- |
 | `about_me` | — | Short bio + key links. The "who is this?" entry point. |
 | `get_experience` | `area?` | Work experience, optionally filtered to one area. |
-| `contact_me` | _(coming next)_ | Notifies the owner that someone wants to connect. |
+| `list_projects` | `tag?` | Shipped, open-source work with links. Proof, not claims. |
+| `fit_for_role` | `job_description` | Ranked experience/projects/skills matched to a JD + honest gap terms. No LLM — the calling agent synthesizes. |
+| `availability` | — | What the owner is open to; lets an agent self-qualify. |
+| `contact_me` | `from`, `message`, `context?` | Notifies the owner (email) that someone wants to connect. Inbound-only. |
+
+Plus one **resource**, `profile://me` — the whole profile as one document, for clients
+that prefer to ground on a resource rather than call tools.
 
 ## Run it locally
 

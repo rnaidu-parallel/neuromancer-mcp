@@ -13,6 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { profile } from "./profile.js";
 import { fitForRole } from "./fit.js";
+import { notifyOwner } from "./notify.js";
 
 /** The whole profile as one markdown document — backs the profile://me resource. */
 function renderProfileMarkdown(): string {
@@ -262,6 +263,49 @@ export function createServer(): McpServer {
         `Not looking for: ${a.notLookingFor.join("; ")}`,
       ].join("\n");
       return { content: [{ type: "text", text }] };
+    },
+  );
+
+  // ── Action tool: the ONLY side effect. Inbound-only — notifies the owner, ──
+  // never emails third parties. The min/max on inputs are enforced by the SDK
+  // before this handler runs, so junk/oversized payloads never reach our code.
+  server.registerTool(
+    "contact_me",
+    {
+      title: "Contact me",
+      description:
+        `Notify ${profile.name} that you want to connect — e.g. you represent a ` +
+        `company and see a fit. Call this only when the user genuinely wants to make ` +
+        `contact. It notifies ${profile.name} only; it does NOT email anyone else.`,
+      inputSchema: {
+        from: z
+          .string()
+          .min(1)
+          .max(200)
+          .describe("Who you are — your name and company/role."),
+        message: z
+          .string()
+          .min(1)
+          .max(2000)
+          .describe("Your message: why you're reaching out and what you're proposing."),
+        context: z
+          .string()
+          .max(500)
+          .optional()
+          .describe("Optional: the role, or what on this profile prompted you to reach out."),
+      },
+    },
+    async ({ from, message, context }) => {
+      const result = await notifyOwner({ from, message, context });
+      const reply = [
+        result.delivered
+          ? `Thanks — your message was delivered to ${profile.name}.`
+          : `Your message was recorded (${result.detail}). ${profile.name} reviews these.`,
+      ];
+      if (profile.schedulingUrl) {
+        reply.push(`To set up a call directly: ${profile.schedulingUrl}`);
+      }
+      return { content: [{ type: "text", text: reply.join("\n") }] };
     },
   );
 
