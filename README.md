@@ -74,21 +74,63 @@ This repo is built to be forked. The whole profile lives in one file.
 3. Run it locally to check, then deploy it anywhere that runs Node, and put your
    `claude mcp add` line on your site.
 
-## Run it locally
+## Run and test it locally
+
+Start the dev server (Express, Streamable HTTP):
 
 ```bash
 npm install
 npm run dev          # serves http://localhost:3000/mcp
 ```
 
-Smoke-test it without an agent, using raw JSON-RPC over the transport. Note the `Accept` header
-must list both `application/json` and `text/event-stream`.
+### MCP Inspector (visual)
+
+The fastest way to poke every tool by hand. With the dev server running:
 
 ```bash
+npx @modelcontextprotocol/inspector
+```
+
+It opens a browser UI. Set **Transport: Streamable HTTP**, **URL: `http://localhost:3000/mcp`**,
+click **Connect**, and you'll see all six tools plus the `profile://me` resource, each callable
+from a form.
+
+### curl (raw JSON-RPC)
+
+Note the `Accept` header must list both `application/json` and `text/event-stream`.
+
+```bash
+# list tools
 curl -s http://localhost:3000/mcp \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# call a tool
+curl -s http://localhost:3000/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"about_me","arguments":{}}}'
+
+# read the resource
+curl -s http://localhost:3000/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"profile://me"}}'
+```
+
+### A real agent (local)
+
+Point Claude Code or Codex at the local server, drive it conversationally, then remove it:
+
+```bash
+# Claude Code
+claude mcp add --transport http rahul-local http://localhost:3000/mcp
+claude mcp remove rahul-local
+
+# Codex
+codex mcp add rahul-local --url http://localhost:3000/mcp
+codex mcp remove rahul-local
 ```
 
 ## Configuration
