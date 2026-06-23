@@ -85,7 +85,7 @@ curl -s https://mcp.neuromancer.in/api/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-You should get the six tools back. Then connect a client:
+You should get the eight tools back. Then connect a client:
 
 ```bash
 claude mcp add --transport http rahul https://mcp.neuromancer.in/api/mcp

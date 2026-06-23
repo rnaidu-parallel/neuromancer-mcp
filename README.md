@@ -99,7 +99,7 @@ npx @modelcontextprotocol/inspector
 ```
 
 It opens a browser UI. Set **Transport: Streamable HTTP**, **URL: `http://localhost:3000/mcp`**,
-click **Connect**, and you'll see all six tools plus the `profile://me` resource, each callable
+click **Connect**, and you'll see all eight tools plus the `profile://me` resource, each callable
 from a form.
 
 ### curl (raw JSON-RPC)

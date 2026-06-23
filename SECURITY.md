@@ -7,8 +7,9 @@ must still get right.
 
 ## What an attacker can reach
 
-- Five **read tools** that return static, owner-authored profile data (no secrets, no per-user
-  data, no database).
+- Seven **read tools** (`about_me`, `get_profile`, `get_experience`, `list_projects`, `search`,
+  `fit_for_role`, `availability`) that return static, owner-authored profile data (no secrets, no
+  per-user data, no database).
 - One **action tool**, `contact_me`, which sends an email **to the owner** (and only the owner).
 - One **resource**, `profile://me`, returning the same static profile.
 
