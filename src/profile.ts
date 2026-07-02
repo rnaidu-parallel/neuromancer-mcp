@@ -95,6 +95,7 @@ export const profile: Profile = {
     "blog.neuromancer.in on agentic AI systems, local LLM deployments, and agents " +
     "on consumer hardware.",
   links: {
+    portfolio: "https://neuromancer.in",
     blog: "https://blog.neuromancer.in",
     linkedin: "https://www.linkedin.com/in/rahul-naidu-siriporam-15472116b",
     github: "https://github.com/rnaidu-parallel",
